@@ -1,27 +1,13 @@
-# Obsidian config
-.obsidian/
+# ===== 白名单模式 =====
+# 默认忽略所有文件
+*
 
-# Claude
-.claude/
+# ===== 允许同步的内容 =====
+# Git 配置文件（必须）
+!.gitignore
+!.github/
+!.github/**
 
-# System files
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Trash
-.trash/
-
-# 私密工作内容（不同步到 GitHub）
-日报/
-周报/
-上线纪要/
-模板/
-欢迎.md
-
-# VitePress 构建产物（由 GitHub Actions 自动生成，不需要在本地）
-docs/
-scripts/
-node_modules/
-package.json
-package-lock.json
+# Obsidian 使用说明（发布到 GitHub Pages）
+!Obsidian使用说明/
+!Obsidian使用说明/**
