@@ -1,9 +1,8 @@
 # Obsidian config
-.obsidian/workspace.json
-.obsidian/workspace-mobile.json
+.obsidian/
 
-# Claude sessions (private)
-.claude/sessions/
+# Claude
+.claude/
 
 # System files
 .DS_Store
