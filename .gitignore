@@ -12,16 +12,16 @@ desktop.ini
 # Trash
 .trash/
 
-# Node.js
-node_modules/
-
-# VitePress build output
-docs/.vitepress/dist/
-docs/.vitepress/cache/
-
 # 私密工作内容（不同步到 GitHub）
 日报/
 周报/
 上线纪要/
 模板/
 欢迎.md
+
+# VitePress 构建产物（由 GitHub Actions 自动生成，不需要在本地）
+docs/
+scripts/
+node_modules/
+package.json
+package-lock.json

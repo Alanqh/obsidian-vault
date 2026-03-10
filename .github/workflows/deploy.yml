@@ -5,9 +5,6 @@ on:
     branches: [main]
     paths:
       - 'Obsidian使用说明/**'
-      - 'docs/**'
-      - 'scripts/**'
-      - 'package.json'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
@@ -33,16 +30,114 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Create VitePress project
+        run: |
+          mkdir -p docs/.vitepress docs/guide
 
-      - name: Prepare docs (copy & transform)
-        run: node scripts/prepare-docs.mjs
+          # --- VitePress config ---
+          cat > docs/.vitepress/config.mts << 'VITEPRESS_CONFIG'
+          import { defineConfig } from 'vitepress'
 
-      - name: Build with VitePress
-        run: npx vitepress build docs
+          export default defineConfig({
+            title: 'Obsidian 使用说明',
+            description: '利用 Obsidian + Claudian 打造高效工作流',
+            lang: 'zh-CN',
+            base: '/obsidian-vault/',
+            head: [['meta', { name: 'theme-color', content: '#7c3aed' }]],
+            themeConfig: {
+              nav: [
+                { text: '首页', link: '/' },
+                { text: '使用说明', link: '/guide/' },
+              ],
+              sidebar: {
+                '/guide/': [{
+                  text: '使用说明',
+                  items: [
+                    { text: '日报周报自动汇总工作流', link: '/guide/日报周报自动汇总工作流' },
+                    { text: 'Obsidian Git 同步配置说明', link: '/guide/Obsidian Git 同步配置说明' },
+                    { text: 'GitHub Pages 部署说明', link: '/guide/GitHub Pages 部署说明' },
+                  ],
+                }],
+              },
+              socialLinks: [{ icon: 'github', link: 'https://github.com/Alanqh/obsidian-vault' }],
+              outline: { label: '目录', level: [2, 3] },
+              docFooter: { prev: '上一篇', next: '下一篇' },
+              lastUpdated: { text: '最后更新' },
+              search: {
+                provider: 'local',
+                options: {
+                  translations: {
+                    button: { buttonText: '搜索', buttonAriaLabel: '搜索' },
+                    modal: {
+                      noResultsText: '无法找到相关结果',
+                      resetButtonTitle: '清除查询条件',
+                      footer: { selectText: '选择', navigateText: '切换' },
+                    },
+                  },
+                },
+              },
+            },
+          })
+          VITEPRESS_CONFIG
+
+          # --- Home page ---
+          cat > docs/index.md << 'HOME_PAGE'
+          ---
+          layout: home
+          hero:
+            name: Obsidian 使用说明
+            text: 高效工作流指南
+            tagline: 利用 Obsidian 核心插件 + Claudian AI 助手，打造日报→周报→上线纪要自动汇总工作流
+            actions:
+              - theme: brand
+                text: 开始阅读
+                link: /guide/
+              - theme: alt
+                text: GitHub 仓库
+                link: https://github.com/Alanqh/obsidian-vault
+          features:
+            - title: 📋 日报自动汇总
+              details: 每天用模板快速记录，周末让 AI 自动生成周报和上线纪要
+            - title: 🔄 GitHub 自动同步
+              details: 通过 Obsidian Git 插件，知识库自动同步到 GitHub 私有仓库
+            - title: 🤖 Claudian AI 助手
+              details: 智能读取日报内容，按模板格式自动汇总输出
+          ---
+          HOME_PAGE
+
+          # --- Guide index ---
+          cat > docs/guide/index.md << 'GUIDE_INDEX'
+          # 使用说明
+
+          欢迎阅读 Obsidian 知识库使用说明，以下是所有可用的指南：
+
+          - [日报周报自动汇总工作流](./日报周报自动汇总工作流.md)
+          - [Obsidian Git 同步配置说明](./Obsidian%20Git%20同步配置说明.md)
+          - [GitHub Pages 部署说明](./GitHub%20Pages%20部署说明.md)
+          GUIDE_INDEX
+
+      - name: Copy and transform Obsidian docs
+        run: |
+          # Copy all .md files from Obsidian使用说明/ to docs/guide/
+          for file in Obsidian使用说明/*.md; do
+            filename=$(basename "$file")
+            # Remove YAML frontmatter and convert [[wikilinks]] to standard links
+            sed -E '
+              /^---$/,/^---$/d
+              s/\[\[Obsidian使用说明\/([^]|]+)\]\]/[\1](.\/\1.md)/g
+              s/\[\[([^]|\/]+)\]\]/[\1](.\/\1.md)/g
+              s/\[\[([^]|]+)\|([^]]+)\]\]/[\2](.\/\1.md)/g
+            ' "$file" > "docs/guide/$filename"
+            echo "✅ $filename"
+          done
+
+      - name: Install VitePress and build
+        working-directory: docs
+        run: |
+          npm init -y > /dev/null 2>&1
+          npm install vitepress@latest
+          npx vitepress build .
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
