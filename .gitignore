@@ -1,0 +1,14 @@
+# Obsidian config
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# Claude sessions (private)
+.claude/sessions/
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Trash
+.trash/
