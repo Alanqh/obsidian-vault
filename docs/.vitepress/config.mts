@@ -23,6 +23,7 @@ export default defineConfig({
           items: [
             { text: '日报周报自动汇总工作流', link: '/guide/日报周报自动汇总工作流' },
             { text: 'Obsidian Git 同步配置说明', link: '/guide/Obsidian Git 同步配置说明' },
+            { text: 'GitHub Pages 部署说明', link: '/guide/GitHub Pages 部署说明' },
           ],
         },
       ],
