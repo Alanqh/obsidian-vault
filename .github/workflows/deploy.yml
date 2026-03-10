@@ -87,8 +87,8 @@ jobs:
           layout: home
           hero:
             name: Obsidian 使用说明
-            text: 高效工作流指南
-            tagline: 利用 Obsidian 核心插件 + Claudian AI 助手，打造日报→周报→上线纪要自动汇总工作流
+            text: 工具与工作流操作指南
+            tagline: 记录 Obsidian 知识库中各类工具配置、插件使用、工作流搭建的操作说明
             actions:
               - theme: brand
                 text: 开始阅读
@@ -97,12 +97,12 @@ jobs:
                 text: GitHub 仓库
                 link: https://github.com/Alanqh/obsidian-vault
           features:
-            - title: 📋 日报自动汇总
-              details: 每天用模板快速记录，周末让 AI 自动生成周报和上线纪要
-            - title: 🔄 GitHub 自动同步
-              details: 通过 Obsidian Git 插件，知识库自动同步到 GitHub 私有仓库
-            - title: 🤖 Claudian AI 助手
-              details: 智能读取日报内容，按模板格式自动汇总输出
+            - title: 📖 操作指南
+              details: 记录各类工具和插件的配置步骤，方便随时查阅和复用
+            - title: 🔄 自动同步
+              details: 文档更新后自动发布到线上，无需手动操作
+            - title: 🤖 AI 辅助
+              details: 结合 Claudian AI 助手，提升知识管理和工作效率
           ---
           HOME_PAGE
 
