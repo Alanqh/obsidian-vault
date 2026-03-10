@@ -90,18 +90,26 @@ tags:
 
 ---
 
-## 🚫 .gitignore 屏蔽规则
+## 🚫 .gitignore 同步规则（白名单模式）
 
-以下文件夹已配置为不同步到 GitHub：
+采用**白名单模式**：默认忽略所有文件，仅允许指定内容同步到 GitHub。新建的文件夹不会自动同步。
 
-| 屏蔽项       | 说明                                  |
-| ------------ | ------------------------------------- |
-| `.obsidian/` | Obsidian 配置文件（插件、主题、设置） |
-| `.claude/`   | Claudian 会话数据                     |
-| `.trash/`    | Obsidian 回收站                       |
-| `.DS_Store` / `Thumbs.db` | 系统缓存文件             |
+### 当前允许同步
 
-> 修改屏蔽规则：编辑知识库根目录下的 `.gitignore` 文件
+| 允许同步项             | 说明                         |
+| ---------------------- | ---------------------------- |
+| `Obsidian使用说明/`    | 使用说明文档（发布到 GitHub Pages） |
+| `.github/`             | GitHub Actions 部署配置      |
+| `.gitignore`           | Git 忽略规则                 |
+
+### 如何添加新的同步文件夹
+
+编辑知识库根目录下的 `.gitignore`，添加两行：
+
+```
+!新文件夹/
+!新文件夹/**
+```
 
 ---
 
@@ -141,6 +149,7 @@ git config --global http.sslBackend openssl
 
 - **首次使用**需要重启 Obsidian 使插件生效
 - 如遇到同步冲突，插件会提示手动解决
-- `.obsidian/` 和 `.claude/` 已屏蔽，不会同步到 GitHub
+- `.obsidian/`、`.claude/`、日报、周报等均不会同步（白名单模式，默认全部忽略）
+- 新建文件夹不会自动同步到 GitHub，需手动添加到 `.gitignore` 白名单
 - 确保设备上已安装 Git 并配置好 SSH Key
 - 代理工具关闭后，SSH 方式仍可正常推送
