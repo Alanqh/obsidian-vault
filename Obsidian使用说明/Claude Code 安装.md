@@ -18,8 +18,6 @@ irm https://claude.ai/install.ps1 | iex
 > | `HTTP_PROXY` | `http://127.0.0.1:7897` |
 > | `HTTPS_PROXY` | `http://127.0.0.1:7897` |
 
----
-
 ### 1.2 验证安装结果
 
 在 CMD 终端中输入：
@@ -34,8 +32,6 @@ claude --version
 > 如果安装过程中系统没有自动配置好环境变量，可能无法识别 `claude` 命令，此时需要手动将安装路径添加到 **Path** 环境变量中。
 >
 > ![](https://md2card.com/img/screenshots/1772723275080_xfrlwm_clipboard-image.png)
-
----
 
 ## 步骤 2：配置 API 环境变量
 
@@ -64,8 +60,6 @@ claude --version
 
 配置参考：[Kimi 官方文档 — 在 Claude Code 中使用 kimi-k2-thinking 模型](https://platform.moonshot.cn/docs/guide/agent-support#%E5%9C%A8-claude-code-%E4%B8%AD%E4%BD%BF%E7%94%A8-kimi-k2-thinking-%E6%A8%A1%E5%9E%8B)
 
----
-
 ## 步骤 3：跳过初始化登录
 
 Claude Code 初始化时强制要求登录（需购买 Claude 订阅或 Token）。通过以下配置可跳过该过程，直接使用 Kimi 模型。
@@ -77,8 +71,6 @@ Claude Code 初始化时强制要求登录（需购买 Claude 订阅或 Token）
 ```
 
 ![](https://md2card.com/img/screenshots/1772723209568_wd3uw_clipboard-image.png)
-
----
 
 ## 步骤 4：在终端与 Claude Code 对话
 
