@@ -127,24 +127,28 @@ jobs:
 
             # Step 1: Remove YAML frontmatter (only at file start) + convert wikilinks
             sed -E '
-              1{/^---$/{ :fm; N; /\n---$/!b fm; d }}
+              1{/^---$/{
+                :fm
+                N
+                /\n---$/!b fm
+                d
+              }}
               s/\[\[Obsidian使用说明\/([^]|]+)\]\]/[\1](.\/\1.md)/g
               s/\[\[([^]|\/]+)\]\]/[\1](.\/\1.md)/g
               s/\[\[([^]|]+)\|([^]]+)\]\]/[\2](.\/\1.md)/g
             ' "$file" > "docs/guide/$filename"
 
             # Step 2: Convert Obsidian callouts to VitePress custom containers
-            # > [!type] Title  →  ::: type Title
-            # > content        →  content
-            # (empty line)     →  :::
-            python3 -c "
+            python3 - "docs/guide/$filename" << 'PYEOF'
           import re, sys
-          text = open(sys.argv[1]).read()
+
+          filepath = sys.argv[1]
+          text = open(filepath).read()
+
           def convert_callout(m):
               ctype = m.group(1).lower()
               title = m.group(2).strip() if m.group(2) else ''
               body = m.group(3)
-              # Remove '> ' prefix from each line
               lines = []
               for line in body.split('\n'):
                   line = re.sub(r'^> ?', '', line)
@@ -152,12 +156,13 @@ jobs:
               content = '\n'.join(lines).strip()
               header = f'::: {ctype} {title}'.strip() if title else f'::: {ctype}'
               return f'{header}\n{content}\n:::\n'
+
           text = re.sub(
               r'^> \[!(\w+)\]\s*(.*)\n((?:^>.*\n?)*)',
               convert_callout, text, flags=re.MULTILINE
           )
-          open(sys.argv[1], 'w').write(text)
-          " "docs/guide/$filename"
+          open(filepath, 'w').write(text)
+          PYEOF
 
             echo "✅ $filename"
           done
