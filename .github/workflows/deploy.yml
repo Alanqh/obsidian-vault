@@ -31,60 +31,133 @@ jobs:
         with:
           node-version: 20
 
-      - name: Create VitePress project
+      - name: Copy and transform Obsidian docs
         run: |
           mkdir -p docs/.vitepress docs/guide
 
-          # --- VitePress config ---
-          cat > docs/.vitepress/config.mts << 'VITEPRESS_CONFIG'
-          import { defineConfig } from 'vitepress'
+          # Copy all .md files and transform them
+          for file in Obsidian使用说明/*.md; do
+            filename=$(basename "$file")
 
-          export default defineConfig({
+            # Remove YAML frontmatter (only at file start) + convert wikilinks
+            sed -E '
+              1{/^---$/{
+                :fm
+                N
+                /\n---$/!b fm
+                d
+              }}
+              s/\[\[Obsidian使用说明\/([^]|]+)\]\]/[\1](.\/\1.md)/g
+              s/\[\[([^]|\/]+)\]\]/[\1](.\/\1.md)/g
+              s/\[\[([^]|]+)\|([^]]+)\]\]/[\2](.\/\1.md)/g
+            ' "$file" > "docs/guide/$filename"
+
+            echo "✅ Copied: $filename"
+          done
+
+          # Convert Obsidian callouts to VitePress custom containers
+          python3 - docs/guide << 'PYEOF'
+          import re, sys, glob, os
+
+          guide_dir = sys.argv[1]
+
+          def convert_callout(m):
+              ctype = m.group(1).lower()
+              title = m.group(2).strip() if m.group(2) else ''
+              body = m.group(3)
+              lines = []
+              for line in body.split('\n'):
+                  line = re.sub(r'^> ?', '', line)
+                  lines.append(line)
+              content = '\n'.join(lines).strip()
+              header = f'::: {ctype} {title}'.strip() if title else f'::: {ctype}'
+              return f'{header}\n{content}\n:::\n'
+
+          for filepath in glob.glob(os.path.join(guide_dir, '*.md')):
+              text = open(filepath).read()
+              text = re.sub(
+                  r'^> \[!(\w+)\]\s*(.*)\n((?:^>.*\n?)*)',
+                  convert_callout, text, flags=re.MULTILINE
+              )
+              open(filepath, 'w').write(text)
+              print(f'✅ Transformed: {os.path.basename(filepath)}')
+          PYEOF
+
+      - name: Auto-generate VitePress config and pages
+        run: |
+          # Scan docs/guide/ to build sidebar & index automatically
+          python3 - << 'PYEOF'
+          import os, json
+
+          guide_dir = 'docs/guide'
+          files = sorted(f for f in os.listdir(guide_dir) if f.endswith('.md'))
+
+          # --- Build sidebar items ---
+          sidebar_items = []
+          index_links = []
+          for f in files:
+              name = f.removesuffix('.md')
+              sidebar_items.append(f"{{ text: '{name}', link: '/guide/{name}' }}")
+              # URL-encode spaces for markdown links
+              encoded = f.replace(' ', '%20')
+              index_links.append(f'- [{name}](./{encoded})')
+
+          sidebar_js = ',\n                    '.join(sidebar_items)
+
+          # --- Write VitePress config ---
+          config = f"""import {{ defineConfig }} from 'vitepress'
+
+          export default defineConfig({{
             title: 'Obsidian 使用说明',
             description: '利用 Obsidian + Claudian 打造高效工作流',
             lang: 'zh-CN',
             base: '/obsidian-vault/',
-            head: [['meta', { name: 'theme-color', content: '#7c3aed' }]],
-            themeConfig: {
+            head: [['meta', {{ name: 'theme-color', content: '#7c3aed' }}]],
+            themeConfig: {{
               nav: [
-                { text: '首页', link: '/' },
-                { text: '使用说明', link: '/guide/' },
+                {{ text: '首页', link: '/' }},
+                {{ text: '使用说明', link: '/guide/' }},
               ],
-              sidebar: {
-                '/guide/': [{
+              sidebar: {{
+                '/guide/': [{{
                   text: '使用说明',
                   items: [
-                    { text: '日报周报自动汇总工作流', link: '/guide/日报周报自动汇总工作流' },
-                    { text: 'Obsidian Git 同步配置说明', link: '/guide/Obsidian Git 同步配置说明' },
-                    { text: 'GitHub Pages 部署说明', link: '/guide/GitHub Pages 部署说明' },
-                    { text: 'Claude Code 安装', link: '/guide/Claude Code 安装' },
+                    {sidebar_js}
                   ],
-                }],
-              },
-              socialLinks: [{ icon: 'github', link: 'https://github.com/Alanqh/obsidian-vault' }],
-              outline: { label: '目录', level: [2, 3] },
-              docFooter: { prev: '上一篇', next: '下一篇' },
-              lastUpdated: { text: '最后更新' },
-              search: {
+                }}],
+              }},
+              socialLinks: [{{ icon: 'github', link: 'https://github.com/Alanqh/obsidian-vault' }}],
+              outline: {{ label: '目录', level: [2, 3] }},
+              docFooter: {{ prev: '上一篇', next: '下一篇' }},
+              lastUpdated: {{ text: '最后更新' }},
+              search: {{
                 provider: 'local',
-                options: {
-                  translations: {
-                    button: { buttonText: '搜索', buttonAriaLabel: '搜索' },
-                    modal: {
+                options: {{
+                  translations: {{
+                    button: {{ buttonText: '搜索', buttonAriaLabel: '搜索' }},
+                    modal: {{
                       noResultsText: '无法找到相关结果',
                       resetButtonTitle: '清除查询条件',
-                      footer: { selectText: '选择', navigateText: '切换' },
-                    },
-                  },
-                },
-              },
-            },
-          })
-          VITEPRESS_CONFIG
+                      footer: {{ selectText: '选择', navigateText: '切换' }},
+                    }},
+                  }},
+                }},
+              }},
+            }},
+          }})
+          """
+          with open('docs/.vitepress/config.mts', 'w') as f:
+              f.write(config)
+          print('✅ Generated: config.mts')
 
-          # --- Home page ---
-          cat > docs/index.md << 'HOME_PAGE'
-          ---
+          # --- Write guide index page ---
+          index_md = '# 使用说明\\n\\n欢迎阅读 Obsidian 知识库使用说明，以下是所有可用的指南：\\n\\n' + '\\n'.join(index_links) + '\\n'
+          with open('docs/guide/index.md', 'w') as f:
+              f.write(index_md)
+          print('✅ Generated: guide/index.md')
+
+          # --- Write home page (static) ---
+          home = """---
           layout: home
           hero:
             name: Obsidian 使用说明
@@ -105,67 +178,11 @@ jobs:
             - title: 🤖 AI 辅助
               details: 结合 Claudian AI 助手，提升知识管理和工作效率
           ---
-          HOME_PAGE
-
-          # --- Guide index ---
-          cat > docs/guide/index.md << 'GUIDE_INDEX'
-          # 使用说明
-
-          欢迎阅读 Obsidian 知识库使用说明，以下是所有可用的指南：
-
-          - [日报周报自动汇总工作流](./日报周报自动汇总工作流.md)
-          - [Obsidian Git 同步配置说明](./Obsidian%20Git%20同步配置说明.md)
-          - [GitHub Pages 部署说明](./GitHub%20Pages%20部署说明.md)
-          - [Claude Code 安装](./Claude%20Code%20安装.md)
-          GUIDE_INDEX
-
-      - name: Copy and transform Obsidian docs
-        run: |
-          # Copy all .md files from Obsidian使用说明/ to docs/guide/
-          for file in Obsidian使用说明/*.md; do
-            filename=$(basename "$file")
-
-            # Step 1: Remove YAML frontmatter (only at file start) + convert wikilinks
-            sed -E '
-              1{/^---$/{
-                :fm
-                N
-                /\n---$/!b fm
-                d
-              }}
-              s/\[\[Obsidian使用说明\/([^]|]+)\]\]/[\1](.\/\1.md)/g
-              s/\[\[([^]|\/]+)\]\]/[\1](.\/\1.md)/g
-              s/\[\[([^]|]+)\|([^]]+)\]\]/[\2](.\/\1.md)/g
-            ' "$file" > "docs/guide/$filename"
-
-            # Step 2: Convert Obsidian callouts to VitePress custom containers
-            python3 - "docs/guide/$filename" << 'PYEOF'
-          import re, sys
-
-          filepath = sys.argv[1]
-          text = open(filepath).read()
-
-          def convert_callout(m):
-              ctype = m.group(1).lower()
-              title = m.group(2).strip() if m.group(2) else ''
-              body = m.group(3)
-              lines = []
-              for line in body.split('\n'):
-                  line = re.sub(r'^> ?', '', line)
-                  lines.append(line)
-              content = '\n'.join(lines).strip()
-              header = f'::: {ctype} {title}'.strip() if title else f'::: {ctype}'
-              return f'{header}\n{content}\n:::\n'
-
-          text = re.sub(
-              r'^> \[!(\w+)\]\s*(.*)\n((?:^>.*\n?)*)',
-              convert_callout, text, flags=re.MULTILINE
-          )
-          open(filepath, 'w').write(text)
+          """
+          with open('docs/index.md', 'w') as f:
+              f.write(home)
+          print('✅ Generated: index.md')
           PYEOF
-
-            echo "✅ $filename"
-          done
 
       - name: Install VitePress and build
         working-directory: docs
